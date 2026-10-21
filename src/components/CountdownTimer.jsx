@@ -1,15 +1,26 @@
 import { useEffect, useRef, useState } from "react";
 import {
   AlarmClock,
-  Pause,
+  Copy,
+  Link2,
+  Mail,
+  MessageCircle,
+  Pencil,
   Play,
   RotateCcw,
+  Share2,
+  Square,
   Timer as TimerIcon,
 } from "lucide-react";
 
 import SectionCard from "./SectionCard.jsx";
+import TimerEditModal from "./TimerEditModal.jsx";
 import { formatDuration } from "../lib/format.js";
-import { playBeep, unlockAudio } from "../lib/sound.js";
+import {
+  DEFAULT_ALARM_SOUND,
+  startAlarmSound,
+  unlockAudio,
+} from "../lib/sound.js";
 
 const PRESETS = [
   { label: "1 minute", seconds: 60 },
@@ -40,9 +51,14 @@ export default function CountdownTimer({ theme }) {
   const [remainingMs, setRemainingMs] = useState(0);
   const [running, setRunning] = useState(false);
   const [finished, setFinished] = useState(false);
+  const [showEditor, setShowEditor] = useState(false);
+  const [timerSound, setTimerSound] = useState(DEFAULT_ALARM_SOUND);
+  const [repeatSound, setRepeatSound] = useState(true);
+  const [copyStatus, setCopyStatus] = useState("");
 
   const deadlineRef = useRef(0);
   const totalDurationRef = useRef(0);
+  const stopTimerSoundRef = useRef(null);
 
   useEffect(() => {
     if (!running) return undefined;
@@ -56,10 +72,10 @@ export default function CountdownTimer({ theme }) {
         setRunning(false);
         setFinished(true);
 
-        playBeep({
-          repeat: 8,
-          frequency: 760,
-          duration: 0.25,
+        stopTimerSoundRef.current?.();
+        stopTimerSoundRef.current = startAlarmSound({
+          sound: timerSound,
+          repeat: repeatSound,
         });
       }
     };
@@ -69,7 +85,14 @@ export default function CountdownTimer({ theme }) {
     tick();
 
     return () => window.clearInterval(id);
-  }, [running]);
+  }, [running, timerSound, repeatSound]);
+
+  useEffect(
+    () => () => {
+      stopTimerSoundRef.current?.();
+    },
+    [],
+  );
 
   const chosenDuration =
     (Math.max(0, Number(hours) || 0) * 3600 +
@@ -86,15 +109,18 @@ export default function CountdownTimer({ theme }) {
   const progress =
     totalMs > 0 ? Math.min(1, Math.max(0, remainingMs / totalMs)) : 0;
 
-  const start = () => {
+  const start = (durationOverride) => {
     unlockAudio();
+    stopTimerSoundRef.current?.();
+    stopTimerSoundRef.current = null;
 
-    const duration = remainingMs > 0 ? remainingMs : chosenDuration;
+    const duration =
+      durationOverride ?? (remainingMs > 0 ? remainingMs : chosenDuration);
 
     if (duration <= 0) return;
 
     totalDurationRef.current =
-      remainingMs > 0 ? totalDurationRef.current : duration;
+      durationOverride || remainingMs <= 0 ? duration : totalDurationRef.current;
 
     deadlineRef.current = Date.now() + duration;
 
@@ -103,17 +129,44 @@ export default function CountdownTimer({ theme }) {
     setRunning(true);
   };
 
-  const pause = () => {
-    setRemainingMs(Math.max(0, deadlineRef.current - Date.now()));
-
-    setRunning(false);
-  };
-
   const reset = () => {
+    stopTimerSoundRef.current?.();
+    stopTimerSoundRef.current = null;
     setRunning(false);
     setFinished(false);
+    setRemainingMs(chosenDuration);
+    totalDurationRef.current = chosenDuration;
+  };
+
+  const stop = () => {
+    stopTimerSoundRef.current?.();
+    stopTimerSoundRef.current = null;
+
+    if (!running) {
+      setFinished(false);
+      return;
+    }
+
+    setRemainingMs(Math.max(0, deadlineRef.current - Date.now()));
+    setRunning(false);
+    setFinished(false);
+  };
+
+  const editTimer = () => {
+    setShowEditor(true);
+  };
+
+  const saveAndStartTimer = (nextTimer) => {
+    stopTimerSoundRef.current?.();
+    stopTimerSoundRef.current = null;
+    setHours(nextTimer.hours);
+    setMinutes(nextTimer.minutes);
+    setSeconds(nextTimer.seconds);
+    setTimerSound(nextTimer.sound);
+    setRepeatSound(nextTimer.repeatSound);
     setRemainingMs(0);
     totalDurationRef.current = 0;
+    start(nextTimer.durationMs);
   };
 
   const applyPreset = (presetSeconds) => {
@@ -138,6 +191,20 @@ export default function CountdownTimer({ theme }) {
       : "border-neutral-200 bg-neutral-50 text-neutral-900"
   }`;
 
+  const shareUrl = window.location.href;
+  const shareText = "Set a countdown with Online Clock.";
+  const encodedUrl = encodeURIComponent(shareUrl);
+  const encodedText = encodeURIComponent(shareText);
+
+  const copyTimerLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopyStatus("Link copied!");
+    } catch {
+      window.prompt("Copy this timer link:", shareUrl);
+    }
+  };
+
   return (
     <div className="space-y-5">
       <SectionCard
@@ -148,7 +215,7 @@ export default function CountdownTimer({ theme }) {
       >
         <div className="grid gap-8 py-2 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.8fr)] lg:items-center">
           <div className="flex flex-col items-center">
-            <div className="relative flex h-64 w-64 items-center justify-center sm:h-72 sm:w-72">
+            <div className="relative flex h-64 w-64 shrink-0 items-center justify-center sm:h-72 sm:w-72">
               <svg
                 className="absolute inset-0 h-full w-full -rotate-90"
                 viewBox="0 0 280 280"
@@ -180,7 +247,7 @@ export default function CountdownTimer({ theme }) {
 
               <div className="relative text-center">
                 <p
-                  className={`clock-digit text-[clamp(2.1rem,5vw,3.4rem)] font-semibold tracking-tight ${
+                  className={`clock-digit whitespace-nowrap text-[clamp(1.6rem,7.5vw,2.4rem)] font-semibold leading-none tracking-tight ${
                     finished
                       ? "text-amber-500"
                       : dark
@@ -212,30 +279,18 @@ export default function CountdownTimer({ theme }) {
             </div>
 
             <div className="mt-5 flex flex-wrap justify-center gap-3">
-              {running ? (
-                <button
-                  type="button"
-                  onClick={pause}
-                  className={`inline-flex items-center gap-2 rounded-xl border px-5 py-3 text-sm font-semibold ${
-                    dark
-                      ? "border-neutral-700 bg-neutral-900 text-white hover:bg-neutral-800"
-                      : "border-neutral-200 bg-neutral-100 text-neutral-800 hover:bg-neutral-200"
-                  }`}
-                >
-                  <Pause size={17} />
-                  Pause
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={start}
-                  disabled={chosenDuration <= 0 && remainingMs <= 0}
-                  className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <Play size={17} fill="currentColor" />
-                  {remainingMs > 0 ? "Resume" : "Start timer"}
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={editTimer}
+                className={`inline-flex items-center gap-2 rounded-xl border px-5 py-3 text-sm font-semibold transition ${
+                  dark
+                    ? "border-neutral-800 text-neutral-300 hover:bg-neutral-900"
+                    : "border-neutral-200 text-neutral-600 hover:bg-neutral-100"
+                }`}
+              >
+                <Pencil size={16} />
+                Edit timer
+              </button>
 
               <button
                 type="button"
@@ -248,6 +303,34 @@ export default function CountdownTimer({ theme }) {
               >
                 <RotateCcw size={16} />
                 Reset
+              </button>
+
+              <button
+                type="button"
+                onClick={finished || running ? stop : start}
+                disabled={!finished && !running && chosenDuration <= 0 && remainingMs <= 0}
+                className={`inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                  running || finished
+                    ? "bg-rose-500 text-white hover:bg-rose-400"
+                    : "bg-emerald-600 text-white hover:bg-emerald-500"
+                }`}
+              >
+                {finished ? (
+                  <>
+                    <Square size={15} fill="currentColor" />
+                    Dismiss alarm
+                  </>
+                ) : running ? (
+                  <>
+                    <Square size={15} fill="currentColor" />
+                    Stop
+                  </>
+                ) : (
+                  <>
+                    <Play size={17} fill="currentColor" />
+                    Start
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -370,6 +453,132 @@ export default function CountdownTimer({ theme }) {
           </div>
         </div>
       </SectionCard>
+
+      <section className="grid gap-5 xl:grid-cols-2">
+        <article
+          className={`rounded-2xl border p-5 sm:p-7 ${
+            dark
+              ? "border-neutral-800 bg-neutral-950/90"
+              : "border-neutral-200 bg-white"
+          }`}
+        >
+          <h2 className="text-xl font-semibold tracking-tight">
+            How to use the timer
+          </h2>
+          <div className={`my-4 h-px ${dark ? "bg-neutral-800" : "bg-neutral-200"}`} />
+          <ol
+            className={`space-y-3 text-sm leading-6 ${
+              dark ? "text-neutral-400" : "text-neutral-600"
+            }`}
+          >
+            <li>
+              <strong className={dark ? "text-neutral-200" : "text-neutral-800"}>1. Set a duration.</strong> Enter hours, minutes, and seconds, choose a quick preset, or select Edit timer.
+            </li>
+            <li>
+              <strong className={dark ? "text-neutral-200" : "text-neutral-800"}>2. Choose your sound.</strong> In Edit timer, select the alert sound you want to hear when time reaches zero.
+            </li>
+            <li>
+              <strong className={dark ? "text-neutral-200" : "text-neutral-800"}>3. Start the countdown.</strong> Select Start. Stop pauses at the current remaining time, and Start resumes it.
+            </li>
+            <li>
+              <strong className={dark ? "text-neutral-200" : "text-neutral-800"}>4. Reset or dismiss.</strong> Reset returns to the full duration. When the timer finishes, select Dismiss alarm to stop the alert.
+            </li>
+          </ol>
+          <p className={`mt-5 text-xs leading-5 ${dark ? "text-neutral-500" : "text-neutral-500"}`}>
+            Keep this page open and allow sound in your browser so the timer can alert you reliably.
+          </p>
+        </article>
+
+        <article
+          className={`rounded-2xl border p-5 sm:p-7 ${
+            dark
+              ? "border-neutral-800 bg-neutral-950/90"
+              : "border-neutral-200 bg-white"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Share2 size={20} className="text-amber-500" />
+            <h2 className="text-xl font-semibold tracking-tight">Share this timer</h2>
+          </div>
+          <p className={`mt-2 text-sm leading-6 ${dark ? "text-neutral-400" : "text-neutral-600"}`}>
+            Send this timer page to friends or save its link for later.
+          </p>
+          <div className={`mt-5 flex items-center gap-2 rounded-xl border p-2 ${dark ? "border-neutral-800 bg-neutral-900/60" : "border-neutral-200 bg-neutral-50"}`}>
+            <Link2 size={16} className="ml-1 shrink-0 text-neutral-500" />
+            <span className="min-w-0 flex-1 truncate text-xs text-neutral-500">
+              {shareUrl}
+            </span>
+            <button
+              type="button"
+              onClick={copyTimerLink}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-neutral-950 transition hover:bg-amber-400"
+            >
+              <Copy size={14} />
+              Copy
+            </button>
+          </div>
+          {copyStatus && <p role="status" className="mt-2 text-xs text-emerald-500">{copyStatus}</p>}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <a
+              href={`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-lg bg-[#1877f2] px-3 py-2 text-xs font-semibold text-white transition hover:brightness-110"
+            >
+              Facebook
+            </a>
+            <a
+              href={`https://x.com/intent/post?url=${encodedUrl}&text=${encodedText}`}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-lg bg-neutral-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-neutral-700"
+            >
+              X
+            </a>
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500"
+            >
+              <MessageCircle size={14} />
+              WhatsApp
+            </a>
+            <a
+              href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-lg bg-[#0a66c2] px-3 py-2 text-xs font-semibold text-white transition hover:brightness-110"
+            >
+              LinkedIn
+            </a>
+            <a
+              href={`mailto:?subject=${encodeURIComponent("Online Clock timer")}&body=${encodeURIComponent(`${shareText}\n\n${shareUrl}`)}`}
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+                dark
+                  ? "border-neutral-700 text-neutral-300 hover:bg-neutral-900"
+                  : "border-neutral-200 text-neutral-600 hover:bg-neutral-100"
+              }`}
+            >
+              <Mail size={14} />
+              Email
+            </a>
+          </div>
+        </article>
+      </section>
+
+      {showEditor && (
+        <TimerEditModal
+          theme={theme}
+          initialHours={hours}
+          initialMinutes={minutes}
+          initialSeconds={seconds}
+          initialSound={timerSound}
+          initialRepeatSound={repeatSound}
+          onClose={() => setShowEditor(false)}
+          onStart={saveAndStartTimer}
+        />
+      )}
     </div>
   );
 }

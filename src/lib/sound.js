@@ -3,14 +3,12 @@ let audioContext;
 export const DEFAULT_ALARM_SOUND = "bells";
 
 export const ALARM_SOUNDS = [
-  { id: "bells", label: "Bells" },
+  { id: "bells", label: "Bell" },
   { id: "birds", label: "Birds" },
   { id: "childhood", label: "Childhood" },
-  { id: "classic", label: "Classic alarm" },
+  { id: "classic", label: "Classic Alarm" },
   { id: "cuckoo", label: "Cuckoo" },
   { id: "flute", label: "Flute" },
-  { id: "glow", label: "Glow" },
-  { id: "shine", label: "Shine" },
   { id: "guitar", label: "Guitar" },
   { id: "happy", label: "Happy" },
   { id: "harp", label: "Harp" },
@@ -19,13 +17,14 @@ export const ALARM_SOUNDS = [
   { id: "piano", label: "Piano" },
   { id: "pipe", label: "Pipe" },
   { id: "pizzicato", label: "Pizzicato" },
-  { id: "rooster", label: "Rooster" },
+  { id: "pulse", label: "Pulse" },
+  { id: "rooster", label: "Rooster Crows" },
   { id: "savannah", label: "Savannah" },
-  { id: "school", label: "School bell" },
+  { id: "school", label: "School Bell" },
+  { id: "shine", label: "Shine" },
   { id: "twinkle", label: "Twinkle" },
   { id: "wind-chimes", label: "Wind Chimes" },
   { id: "xylophone", label: "Xylophone" },
-  { id: "pulse", label: "Pulse" },
 ];
 
 const SOUND_PATTERNS = {
@@ -369,15 +368,43 @@ function getPattern(sound) {
 }
 
 export function previewAlarmSound(sound = DEFAULT_ALARM_SOUND) {
+  const audioSound = AUDIO_SOUNDS[sound];
+
+  if (audioSound) {
+    const audio = new Audio(audioSound.source);
+    audio.volume = 0.85;
+    audio.play().catch(() => {
+      // Browsers can block sound until the page has received a user gesture.
+    });
+
+    return () => {
+      audio.pause();
+      audio.currentTime = 0;
+      audio.removeAttribute("src");
+      audio.load();
+    };
+  }
+
   const context = getAudioContext();
 
-  if (!context) return;
+  if (!context) return () => {};
 
   const pattern = getPattern(sound);
   const nodes = new Set();
   const startAt = context.currentTime + 0.04;
 
   pattern.notes.forEach((note) => scheduleNote(context, note, startAt, nodes));
+
+  return () => {
+    nodes.forEach((oscillator) => {
+      try {
+        oscillator.stop();
+      } catch {
+        // An oscillator may have completed before preview is stopped.
+      }
+    });
+    nodes.clear();
+  };
 }
 
 export function startAlarmSound({

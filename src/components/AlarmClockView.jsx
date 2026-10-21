@@ -17,6 +17,7 @@ export default function AlarmClockView({
   onQuickAdd,
   onToggleAlarm,
   onDeleteAlarm,
+  clockSettings,
 }) {
   const dark = theme === "dark";
 
@@ -33,6 +34,10 @@ export default function AlarmClockView({
       <DigitalClock
         now={now}
         use24Hour={use24Hour}
+        showDate={clockSettings.showDate}
+        showSeconds={clockSettings.showSeconds}
+        digitalFont={clockSettings.digitalFont}
+        color={clockSettings.color}
         onSetAlarm={onOpenCreate}
         theme={theme}
       />

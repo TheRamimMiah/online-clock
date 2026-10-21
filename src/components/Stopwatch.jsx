@@ -13,6 +13,7 @@ export default function Stopwatch({ theme }) {
 
   const accumulatedRef = useRef(0);
   const startedAtRef = useRef(0);
+  const [elapsedTime, centiseconds] = formatDuration(elapsed, true).split(".");
 
   useEffect(() => {
     if (!running) return undefined;
@@ -77,18 +78,16 @@ export default function Stopwatch({ theme }) {
   return (
     <div className="space-y-5">
       <SectionCard
-        title="Stopwatch"
-        subtitle="Measure elapsed time and save lap splits."
-        icon={Watch}
         theme={theme}
       >
         <div className="flex flex-col items-center px-1 py-10 text-center sm:py-14">
           <div
-            className={`clock-digit text-[clamp(2.5rem,9vw,6.5rem)] font-medium leading-none tracking-tight tabular-nums ${
+            className={`clock-digit flex items-baseline justify-center gap-1 whitespace-nowrap font-medium leading-none tracking-tight tabular-nums sm:gap-2 ${
               dark ? "text-white" : "text-neutral-950"
             }`}
           >
-            {formatDuration(elapsed, true)}
+            <span className="text-[clamp(2.5rem,9vw,6.5rem)]">{elapsedTime}</span>
+            <span className="text-[clamp(1.25rem,4.2vw,3rem)]">.{centiseconds}</span>
           </div>
 
           <p

@@ -32,11 +32,9 @@ const VIEW_META = {
   timer: {
     eyebrow: "STAY FOCUSED",
     title: "Countdown timer",
-    description: "Set a duration and let the clock keep track for you.",
     icon: Timer,
   },
   stopwatch: {
-    eyebrow: "TRACK EVERY SECOND",
     title: "Stopwatch",
     description: "Measure elapsed time, record laps, and stay in rhythm.",
     icon: Watch,
@@ -49,10 +47,24 @@ const VIEW_META = {
   },
 };
 
+const DEFAULT_CLOCK_SETTINGS = {
+  digitalFont: true,
+  use12Hour: true,
+  showDate: true,
+  showSeconds: true,
+  color: "amber",
+};
+
 export default function App() {
   const now = useNow(1000);
 
   const [theme, setTheme] = useLocalStorage("online-clock-theme-v1", "dark");
+  const [storedClockSettings, setStoredClockSettings] = useLocalStorage(
+    "online-clock-display-settings-v1",
+    DEFAULT_CLOCK_SETTINGS,
+  );
+  const clockSettings = { ...DEFAULT_CLOCK_SETTINGS, ...storedClockSettings };
+  const use24Hour = !clockSettings.use12Hour;
 
   const [activeView, setActiveView] = useState("alarm");
   const [showAlarmForm, setShowAlarmForm] = useState(false);
@@ -143,9 +155,11 @@ export default function App() {
           <div className="mx-auto max-w-315">
             <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
               <div>
-                <p className="mb-2 text-[10px] font-bold tracking-[0.24em] text-amber-500">
-                  {meta.eyebrow}
-                </p>
+                {meta.eyebrow && (
+                  <p className="mb-2 text-[10px] font-bold tracking-[0.24em] text-amber-500">
+                    {meta.eyebrow}
+                  </p>
+                )}
 
                 <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight sm:text-3xl">
                   <span
@@ -188,7 +202,8 @@ export default function App() {
               <AlarmClockView
                 now={now}
                 theme={theme}
-                use24Hour={false}
+                use24Hour={use24Hour}
+                clockSettings={clockSettings}
                 alarms={alarms}
                 onOpenCreate={() => openAlarmForm()}
                 onQuickAdd={handleQuickAdd}
@@ -206,7 +221,7 @@ export default function App() {
             </div>
 
             <div className={activeView === "world" ? "block" : "hidden"}>
-              <WorldClock now={now} theme={theme} use24Hour={false} />
+              <WorldClock now={now} theme={theme} use24Hour={use24Hour} />
             </div>
 
             {activeView === "alarm" && (
@@ -237,9 +252,14 @@ export default function App() {
                   }`}
                 >
                   <p>
-                    Choose <strong className={dark ? "text-neutral-200" : "text-neutral-800"}>Set Alarm</strong>, then
-                    select the hour, minute, optional label, repeat days, and
-                    alarm sound. Save the alarm when you are ready.
+                    Choose{" "}
+                    <strong
+                      className={dark ? "text-neutral-200" : "text-neutral-800"}
+                    >
+                      Set Alarm
+                    </strong>
+                    , then select the hour, minute, optional label, repeat days,
+                    and alarm sound. Save the alarm when you are ready.
                   </p>
 
                   <p>
@@ -311,6 +331,14 @@ export default function App() {
           onToggleTheme={() => setTheme(dark ? "light" : "dark")}
           onRequestNotifications={requestNotifications}
           notificationState={notificationState}
+          clockSettings={clockSettings}
+          onUpdateClockSettings={(changes) =>
+            setStoredClockSettings((current) => ({
+              ...DEFAULT_CLOCK_SETTINGS,
+              ...current,
+              ...changes,
+            }))
+          }
         />
       )}
 
@@ -318,7 +346,7 @@ export default function App() {
         alarm={ringingAlarm}
         onDismiss={dismissAlarm}
         theme={theme}
-        use24Hour={false}
+        use24Hour={use24Hour}
       />
     </div>
   );

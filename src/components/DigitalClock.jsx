@@ -31,13 +31,31 @@ function ClockControl({ label, onClick, children, disabled = false }) {
   );
 }
 
-export default function DigitalClock({ now, onSetAlarm, theme }) {
+const CLOCK_COLOR_CLASSES = {
+  white: "text-white",
+  amber: "text-amber-500",
+  red: "text-red-500",
+  green: "text-emerald-500",
+  blue: "text-blue-500",
+};
+
+export default function DigitalClock({
+  now,
+  onSetAlarm,
+  theme,
+  use24Hour = false,
+  showDate = true,
+  showSeconds = true,
+  digitalFont = true,
+  color = "amber",
+}) {
   const dark = theme === "dark";
   const panelRef = useRef(null);
   const [fontScale, setFontScale] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [shareStatus, setShareStatus] = useState("");
-  const { time, meridiem } = formatClock(now, false, true);
+  const { time, meridiem } = formatClock(now, use24Hour, showSeconds);
+  const clockColor = CLOCK_COLOR_CLASSES[color] || CLOCK_COLOR_CLASSES.amber;
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -154,29 +172,31 @@ export default function DigitalClock({ now, onSetAlarm, theme }) {
 
       <div className="digital-clock-content relative z-1">
         <div
-          className="clock-digit flex min-h-28 items-baseline justify-center gap-1.5 py-3 sm:min-h-36 sm:gap-3"
+          className={`${digitalFont ? "clock-digit" : "font-sans"} flex min-h-28 items-baseline justify-center gap-1.5 py-3 sm:min-h-36 sm:gap-3`}
           style={{
             fontSize: `clamp(${2.65 * fontScale}rem, ${7.3 * fontScale}vw, ${6.2 * fontScale}rem)`,
           }}
           aria-label={`Current time ${time} ${meridiem}`}
         >
           <span
-            className="clock-digit-time whitespace-nowrap font-semibold leading-none tabular-nums text-amber-500 [text-shadow:0_0_0.8px_currentColor]"
-            style={{ transform: "skewX(-2deg) scaleY(1.12)" }}
+            className={`whitespace-nowrap font-semibold leading-none tabular-nums ${clockColor} ${digitalFont ? "clock-digit-time [text-shadow:0_0_0.8px_currentColor]" : ""}`}
+            style={digitalFont ? { transform: "skewX(-2deg) scaleY(1.12)" } : undefined}
           >
             {time}
           </span>
           {meridiem && (
-            <span className="clock-digit-period font-normal leading-none text-amber-500">
+            <span className={`clock-digit-period font-normal leading-none ${clockColor}`}>
               {meridiem}
             </span>
           )}
         </div>
 
-        <div className="mt-5 flex items-center justify-center gap-2 text-xs font-medium tracking-[0.16em] text-neutral-500 sm:text-sm">
-          <CalendarDays size={15} />
-          {formatDate(now)}
-        </div>
+        {showDate && (
+          <div className="mt-5 flex items-center justify-center gap-2 text-xs font-medium tracking-[0.16em] text-neutral-500 sm:text-sm">
+            <CalendarDays size={15} />
+            {formatDate(now)}
+          </div>
+        )}
 
         <button
           type="button"
