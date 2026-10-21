@@ -247,7 +247,7 @@ export default function CountdownTimer({ theme }) {
 
               <div className="relative text-center">
                 <p
-                  className={`clock-digit whitespace-nowrap text-[clamp(1.6rem,7.5vw,2.4rem)] font-semibold leading-none tracking-tight ${
+                  className={`font-mono whitespace-nowrap text-[clamp(1.6rem,7.5vw,2.4rem)] font-semibold leading-none tabular-nums ${
                     finished
                       ? "text-amber-500"
                       : dark
@@ -307,7 +307,7 @@ export default function CountdownTimer({ theme }) {
 
               <button
                 type="button"
-                onClick={finished || running ? stop : start}
+                onClick={() => (finished || running ? stop() : start())}
                 disabled={!finished && !running && chosenDuration <= 0 && remainingMs <= 0}
                 className={`inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${
                   running || finished
