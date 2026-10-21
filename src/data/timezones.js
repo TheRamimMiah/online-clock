@@ -1,0 +1,87 @@
+export const WORLD_CITIES = [
+  {
+    city: "Dhaka",
+    country: "Bangladesh",
+    zone: "Asia/Dhaka",
+    code: "BDT",
+  },
+  {
+    city: "London",
+    country: "United Kingdom",
+    zone: "Europe/London",
+    code: "GMT",
+  },
+  {
+    city: "New York",
+    country: "United States",
+    zone: "America/New_York",
+    code: "ET",
+  },
+  {
+    city: "Tokyo",
+    country: "Japan",
+    zone: "Asia/Tokyo",
+    code: "JST",
+  },
+  {
+    city: "Sydney",
+    country: "Australia",
+    zone: "Australia/Sydney",
+    code: "AET",
+  },
+  {
+    city: "Dubai",
+    country: "United Arab Emirates",
+    zone: "Asia/Dubai",
+    code: "GST",
+  },
+  {
+    city: "Singapore",
+    country: "Singapore",
+    zone: "Asia/Singapore",
+    code: "SGT",
+  },
+  {
+    city: "Los Angeles",
+    country: "United States",
+    zone: "America/Los_Angeles",
+    code: "PT",
+  },
+];
+
+export const QUICK_ALARMS = [
+  "04:00",
+  "04:30",
+  "05:00",
+  "05:15",
+  "05:30",
+  "05:45",
+  "06:00",
+  "06:15",
+  "06:30",
+  "06:45",
+  "07:00",
+  "07:15",
+  "07:30",
+  "07:45",
+  "08:00",
+  "08:15",
+  "08:30",
+  "08:45",
+  "09:00",
+  "10:00",
+  "11:00",
+  "12:00",
+  "13:00",
+  "14:00",
+];
+
+export const WEEKDAYS = [
+  { short: "S", label: "Sunday", value: 0 },
+  { short: "M", label: "Monday", value: 1 },
+  { short: "T", label: "Tuesday", value: 2 },
+  { short: "W", label: "Wednesday", value: 3 },
+  { short: "T", label: "Thursday", value: 4 },
+  { short: "F", label: "Friday", value: 5 },
+  { short: "S", label: "Saturday", value: 6 },
+];
