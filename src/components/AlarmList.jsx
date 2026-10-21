@@ -107,6 +107,8 @@ export default function AlarmList({
               }`}
             >
               {repeatText(alarm.days)}
+              <span className="mx-1.5">Â·</span>
+              {alarm.repeatSound === false ? "Plays once" : "Rings until dismissed"}
             </p>
           </div>
 

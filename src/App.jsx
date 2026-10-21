@@ -209,6 +209,54 @@ export default function App() {
               <WorldClock now={now} theme={theme} use24Hour={false} />
             </div>
 
+            {activeView === "alarm" && (
+              <section
+                className={`mt-8 rounded-2xl border p-5 sm:p-7 ${
+                  dark
+                    ? "border-neutral-800 bg-neutral-900/50"
+                    : "border-neutral-200 bg-white"
+                }`}
+                aria-labelledby="how-to-use-alarm"
+              >
+                <h2
+                  id="how-to-use-alarm"
+                  className="text-xl font-semibold tracking-tight"
+                >
+                  How to use this online alarm clock
+                </h2>
+
+                <div
+                  className={`my-4 h-px ${
+                    dark ? "bg-neutral-800" : "bg-neutral-200"
+                  }`}
+                />
+
+                <div
+                  className={`space-y-4 text-sm leading-7 ${
+                    dark ? "text-neutral-400" : "text-neutral-600"
+                  }`}
+                >
+                  <p>
+                    Choose <strong className={dark ? "text-neutral-200" : "text-neutral-800"}>Set Alarm</strong>, then
+                    select the hour, minute, optional label, repeat days, and
+                    alarm sound. Save the alarm when you are ready.
+                  </p>
+
+                  <p>
+                    Select a sound in the alarm form to hear it once before
+                    saving. When the alarm rings, it can keep playing until you
+                    dismiss it.
+                  </p>
+
+                  <p>
+                    Keep this page open and your device awake. Browser alarms
+                    cannot ring after the tab or browser has been closed, so
+                    make sure sound is allowed for reliable alerts.
+                  </p>
+                </div>
+              </section>
+            )}
+
             <footer
               className={`mt-8 flex flex-col gap-3 border-t pt-5 text-xs sm:flex-row sm:items-center sm:justify-between ${
                 dark

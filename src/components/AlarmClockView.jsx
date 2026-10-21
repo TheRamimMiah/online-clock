@@ -120,7 +120,7 @@ export default function AlarmClockView({
       </div>
 
       <p
-        className={`flex items-start gap-2 rounded-xl px-1 text-xs leading-5 ${
+        className={`hidden items-start gap-2 rounded-xl px-1 text-xs leading-5 ${
           dark ? "text-neutral-500" : "text-neutral-500"
         }`}
       >

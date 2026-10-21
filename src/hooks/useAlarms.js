@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocalStorage } from "./useLocalStorage.js";
-import { playBeep } from "../lib/sound.js";
+import { DEFAULT_ALARM_SOUND, startAlarmSound } from "../lib/sound.js";
 
 function getDateKey(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
@@ -14,6 +14,14 @@ export function useAlarms() {
 
   const [ringingAlarm, setRingingAlarm] = useState(null);
   const lastMinuteRef = useRef("");
+  const stopSoundRef = useRef(null);
+
+  useEffect(
+    () => () => {
+      stopSoundRef.current?.();
+    },
+    [],
+  );
 
   useEffect(() => {
     const checkAlarms = () => {
@@ -52,12 +60,11 @@ export function useAlarms() {
 
       const active = matching[0];
 
+      stopSoundRef.current?.();
       setRingingAlarm(active);
-
-      playBeep({
-        repeat: 6,
-        frequency: 920,
-        duration: 0.24,
+      stopSoundRef.current = startAlarmSound({
+        sound: active.sound || DEFAULT_ALARM_SOUND,
+        repeat: active.repeatSound !== false,
       });
 
       setAlarms((current) =>
@@ -104,6 +111,8 @@ export function useAlarms() {
           days: [],
           enabled: true,
           lastFiredDate: null,
+          sound: DEFAULT_ALARM_SOUND,
+          repeatSound: true,
           ...alarm,
         },
       ].sort((a, b) => a.time.localeCompare(b.time)),
@@ -122,7 +131,11 @@ export function useAlarms() {
     setAlarms((current) => current.filter((alarm) => alarm.id !== id));
   };
 
-  const dismissAlarm = () => setRingingAlarm(null);
+  const dismissAlarm = () => {
+    stopSoundRef.current?.();
+    stopSoundRef.current = null;
+    setRingingAlarm(null);
+  };
 
   return {
     alarms,
